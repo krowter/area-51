@@ -14,6 +14,8 @@ export class A51Canvas extends LitElement {
   overlayCtx: CanvasRenderingContext2D | null = null
   overlay: HTMLCanvasElement | null = null
 
+  imageData: HTMLImageElement | null = null
+
   @property()
   docsHint = 'Click on the Vite and Lit logos to learn more'
 
@@ -32,7 +34,7 @@ export class A51Canvas extends LitElement {
 
   firstUpdated(): void {
     this.image = this.renderRoot.querySelector('#image')
-    this.imageCtx = this.image?.getContext('2d') ?? null
+    this.imageCtx = this.image?.getContext('2d', { willReadFrequently: true }) ?? null
     this.overlay = this.renderRoot.querySelector('#overlay')
     this.overlayCtx = this.overlay?.getContext('2d') ?? null
 
@@ -54,8 +56,17 @@ export class A51Canvas extends LitElement {
 
       this.isDragging = false;
       var rect = this.overlay.getBoundingClientRect();
-      this.endX = e.clientX - rect.left;
-      this.endY = e.clientY - rect.top;
+      const _endX = e.clientX - rect.left;
+      const _endY = e.clientY - rect.top;
+
+      if (_endX < this.startX) {
+        this.endX = this.startX
+        this.startX = _endX
+      }
+      if (_endY < this.startY) {
+        this.endY = this.startY
+        this.startY = _endY
+      }
       this.clearSelectionRect();
     });
 
@@ -72,6 +83,7 @@ export class A51Canvas extends LitElement {
       this.imageCtx?.drawImage(img, 0, 0)
     }
     img.src = src
+    this.imageData = img
   }
 
   private drawSelectionRect() {
@@ -85,14 +97,42 @@ export class A51Canvas extends LitElement {
   }
 
   private clearSelectionRect() {
+    if (this.imageData === null) return
     if (this.overlayCtx === null || this.overlay === null) return;
-    if (this.imageCtx === null) return;
+    if (this.imageCtx === null || this.image === null) return;
 
-    this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
-    this.imageCtx.fill()
+    const latestCanvasImage = new Image()
+
+    latestCanvasImage.onload = () => {
+      if (this.imageData === null) return
+      if (this.overlayCtx === null || this.overlay === null) return;
+      if (this.imageCtx === null || this.image === null) return;
+
+
+      const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
+
+      this.imageCtx.filter = 'blur(5px)'
+
+      this.imageCtx.drawImage(latestCanvasImage, 0, 0, this.image.width, this.image.height)
+
+      const blurredArea = this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
+
+      this.imageCtx.clearRect(0, 0, this.image.width, this.image.height)
+
+      this.imageCtx.filter = 'none'
+
+      this.imageCtx.putImageData(latestCanvasState, 0, 0)
+
+      this.imageCtx.putImageData(blurredArea, this.startX, this.startY)
+
+    }
+    latestCanvasImage.src = this.image.toDataURL()
+
+    // const imgData= this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
+
+    // this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
+    // this.imageCtx.fill()
   }
-
-
 
   static styles = css`
     :host {
