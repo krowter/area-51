@@ -40,9 +40,12 @@ export class A51Canvas extends LitElement {
     });
 
     this.overlay?.addEventListener('mousedown', (e) => {
+      if (this.overlay === null) return;
+
       this.isDragging = true;
-      this.startX = e.pageX
-      this.startY = e.pageY
+      var rect = this.overlay.getBoundingClientRect();
+      this.startX = e.clientX - rect.left;
+      this.startY = e.clientY - rect.top;
     });
     this.overlay?.addEventListener('mouseup', (e) => {
       if (this.overlay === null) return;
