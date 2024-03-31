@@ -1,5 +1,6 @@
 import { LitElement, css, html } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
+import { controllerCensorOption } from './symbols'
 
 @customElement('a51-canvas')
 export class A51Canvas extends LitElement {
@@ -14,17 +15,10 @@ export class A51Canvas extends LitElement {
   overlayCtx: CanvasRenderingContext2D | null = null
   overlay: HTMLCanvasElement | null = null
 
-  imageData: HTMLImageElement | null = null
-
-  @property()
-  docsHint = 'Click on the Vite and Lit logos to learn more'
-
-  @property({ type: Number })
-  count = 0
-
   render() {
     return html`
       <input type=file @change=${this.handleFileUpload} />
+      <button @click=${this.handleDownload}>Download</button>
       <div class=wrapper>
         <canvas id=overlay width=500 height=500></canvas>
         <canvas id=image width=500 height=500></canvas>
@@ -49,7 +43,6 @@ export class A51Canvas extends LitElement {
       this.isDragging = true;
       this.startX = e.pageX
       this.startY = e.pageY
-      // this.clearSelectionRect();
     });
     this.overlay?.addEventListener('mouseup', (e) => {
       if (this.overlay === null) return;
@@ -83,7 +76,11 @@ export class A51Canvas extends LitElement {
       this.imageCtx?.drawImage(img, 0, 0)
     }
     img.src = src
-    this.imageData = img
+  }
+
+  private handleDownload() {
+    if (this.image === null) return;
+    document.write(`<img src="${this.image.toDataURL('image/png')}"/>`)
   }
 
   private drawSelectionRect() {
@@ -97,51 +94,43 @@ export class A51Canvas extends LitElement {
   }
 
   private clearSelectionRect() {
-    if (this.imageData === null) return
-    if (this.overlayCtx === null || this.overlay === null) return;
-    if (this.imageCtx === null || this.image === null) return;
+    if (this.image === null) return;
 
     const latestCanvasImage = new Image()
 
     latestCanvasImage.onload = () => {
-      if (this.imageData === null) return
       if (this.overlayCtx === null || this.overlay === null) return;
       if (this.imageCtx === null || this.image === null) return;
+console.log(window[controllerCensorOption])
+      if (window[controllerCensorOption] === 'black-out') {
+        this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
+        this.imageCtx.fill()
+      } else {
 
+        const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
 
-      const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
+        this.imageCtx.filter = 'blur(5px)'
 
-      this.imageCtx.filter = 'blur(5px)'
+        this.imageCtx.drawImage(latestCanvasImage, 0, 0, this.image.width, this.image.height)
 
-      this.imageCtx.drawImage(latestCanvasImage, 0, 0, this.image.width, this.image.height)
+        const blurredArea = this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
 
-      const blurredArea = this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
+        this.imageCtx.clearRect(0, 0, this.image.width, this.image.height)
 
-      this.imageCtx.clearRect(0, 0, this.image.width, this.image.height)
+        this.imageCtx.filter = 'none'
 
-      this.imageCtx.filter = 'none'
+        this.imageCtx.putImageData(latestCanvasState, 0, 0)
 
-      this.imageCtx.putImageData(latestCanvasState, 0, 0)
+        this.imageCtx.putImageData(blurredArea, this.startX, this.startY)
+      }
 
-      this.imageCtx.putImageData(blurredArea, this.startX, this.startY)
 
     }
     latestCanvasImage.src = this.image.toDataURL()
 
-    // const imgData= this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
-
-    // this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
-    // this.imageCtx.fill()
   }
 
   static styles = css`
-    :host {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 2rem;
-      text-align: center;
-    }
-
     .wrapper {
       position: relative;
     }
