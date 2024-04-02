@@ -107,39 +107,33 @@ export class A51Canvas extends LitElement {
 
     const latestCanvasImage = new Image()
 
-    latestCanvasImage.onload = () => {
-      if (this.overlayCtx === null || this.overlay === null) throw new Error('this.overlayCtx is null');
-      if (this.imageCtx === null || this.image === null) throw new Error('this.imageCtx is null');
+    if (this.overlayCtx === null || this.overlay === null) throw new Error('this.overlayCtx is null');
+    if (this.imageCtx === null || this.image === null) throw new Error('this.imageCtx is null');
 
-      switch (window[controllerCensorOption]) {
-        case 'black-out':
-          this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
-          this.imageCtx.fill()
-          break
+    switch (window[controllerCensorOption]) {
+      case 'black-out':
+        this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
+        this.imageCtx.fill()
+        break
 
-        case 'blur':
-          const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
+      case 'blur':
+        latestCanvasImage.onload = () => {
+          if (this.imageCtx === null || this.image === null) throw new Error('this.imageCtx is null');
 
           this.imageCtx.filter = 'blur(5px)'
 
-          this.imageCtx.drawImage(latestCanvasImage, 0, 0, this.image.width, this.image.height)
+          const selectedArea = [this.startX, this.startY, this.endX - this.startX, this.endY - this.startY] as const
 
-          const blurredArea = this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
-
-          this.imageCtx.clearRect(0, 0, this.image.width, this.image.height)
+          this.imageCtx.drawImage(latestCanvasImage, ...selectedArea, ...selectedArea)
 
           this.imageCtx.filter = 'none'
+        }
+        latestCanvasImage.src = this.image.toDataURL()
+        break
 
-          this.imageCtx.putImageData(latestCanvasState, 0, 0)
-
-          this.imageCtx.putImageData(blurredArea, this.startX, this.startY)
-          break
-
-        default:
-          window[controllerCensorOption] satisfies never
-      }
+      default:
+        window[controllerCensorOption] satisfies never
     }
-    latestCanvasImage.src = this.image.toDataURL()
   }
 
   static styles = css`
