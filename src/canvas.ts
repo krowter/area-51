@@ -1,5 +1,5 @@
 import { LitElement, css, html } from 'lit'
-import { customElement, property } from 'lit/decorators.js'
+import { customElement } from 'lit/decorators.js'
 import { controllerCensorOption } from './symbols'
 
 @customElement('a51-canvas')
@@ -20,26 +20,33 @@ export class A51Canvas extends LitElement {
       <input type=file @change=${this.handleFileUpload} />
       <button @click=${this.handleDownload}>Download</button>
       <div class=wrapper>
-        <canvas id=overlay width=500 height=500></canvas>
-        <canvas id=image width=500 height=500></canvas>
+        <canvas class=overlay width=500 height=500></canvas>
+        <canvas class=image width=500 height=500></canvas>
       </div>
     `
   }
 
   firstUpdated(): void {
-    this.image = this.renderRoot.querySelector('#image')
-    this.imageCtx = this.image?.getContext('2d', { willReadFrequently: true }) ?? null
-    this.overlay = this.renderRoot.querySelector('#overlay')
-    this.overlayCtx = this.overlay?.getContext('2d') ?? null
+    this.image = this.renderRoot.querySelector('.image')
+    this.overlay = this.renderRoot.querySelector('.overlay')
 
-    this.overlay?.addEventListener('mousemove', (e) => {
+    if (this.image === null) throw new Error('.image querySelector is null')
+    if (this.overlay === null) throw new Error('.overlay querySelector is null')
+
+    this.imageCtx = this.image.getContext('2d', { willReadFrequently: true })
+    this.overlayCtx = this.overlay.getContext('2d')
+
+    if (this.imageCtx === null) throw new Error('imageCtx is null')
+    if (this.overlayCtx === null) throw new Error('overlayCtx is null')
+
+    this.overlay.addEventListener('mousemove', (e) => {
       if (!this.isDragging) return;
       this.endX = e.offsetX;
       this.endY = e.offsetY;
       this.drawSelectionRect();
     });
 
-    this.overlay?.addEventListener('mousedown', (e) => {
+    this.overlay.addEventListener('mousedown', (e) => {
       if (this.overlay === null) return;
 
       this.isDragging = true;
@@ -47,7 +54,7 @@ export class A51Canvas extends LitElement {
       this.startX = e.clientX - rect.left;
       this.startY = e.clientY - rect.top;
     });
-    this.overlay?.addEventListener('mouseup', (e) => {
+    this.overlay.addEventListener('mouseup', (e) => {
       if (this.overlay === null) return;
 
       this.isDragging = false;
@@ -69,8 +76,8 @@ export class A51Canvas extends LitElement {
   }
 
   private handleFileUpload(e: Event) {
-    if (!(e.currentTarget instanceof HTMLInputElement)) return
-    if (e.currentTarget.files === null) return
+    if (!(e.currentTarget instanceof HTMLInputElement)) throw new Error('e.currentTarget is not HTMLInputElement')
+    if (e.currentTarget.files === null) throw new Error('e.currentTarget.files is null')
 
     const src = URL.createObjectURL(e.currentTarget.files[0])
     const img = new Image()
@@ -82,12 +89,12 @@ export class A51Canvas extends LitElement {
   }
 
   private handleDownload() {
-    if (this.image === null) return;
+    if (this.image === null) throw new Error('this.image is null');
     document.write(`<img src="${this.image.toDataURL('image/png')}"/>`)
   }
 
   private drawSelectionRect() {
-    if (this.overlayCtx === null || this.overlay === null) return;
+    if (this.overlayCtx === null || this.overlay === null) throw new Error('this.overlayCtx is null');
 
     this.overlayCtx.clearRect(0, 0, this.overlay.width, this.overlay.height);
 
@@ -97,40 +104,43 @@ export class A51Canvas extends LitElement {
   }
 
   private clearSelectionRect() {
-    if (this.image === null) return;
+    if (this.image === null) throw new Error('this.image is null');
 
     const latestCanvasImage = new Image()
 
     latestCanvasImage.onload = () => {
-      if (this.overlayCtx === null || this.overlay === null) return;
-      if (this.imageCtx === null || this.image === null) return;
-console.log(window[controllerCensorOption])
-      if (window[controllerCensorOption] === 'black-out') {
-        this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
-        this.imageCtx.fill()
-      } else {
+      if (this.overlayCtx === null || this.overlay === null) throw new Error('this.overlayCtx is null');
+      if (this.imageCtx === null || this.image === null) throw new Error('this.imageCtx is null');
 
-        const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
+      switch (window[controllerCensorOption]) {
+        case 'black-out':
+          this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
+          this.imageCtx.fill()
+          break
+          
+        case 'blur':
+          const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
 
-        this.imageCtx.filter = 'blur(5px)'
+          this.imageCtx.filter = 'blur(5px)'
 
-        this.imageCtx.drawImage(latestCanvasImage, 0, 0, this.image.width, this.image.height)
+          this.imageCtx.drawImage(latestCanvasImage, 0, 0, this.image.width, this.image.height)
 
-        const blurredArea = this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
+          const blurredArea = this.imageCtx.getImageData(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY)
 
-        this.imageCtx.clearRect(0, 0, this.image.width, this.image.height)
+          this.imageCtx.clearRect(0, 0, this.image.width, this.image.height)
 
-        this.imageCtx.filter = 'none'
+          this.imageCtx.filter = 'none'
 
-        this.imageCtx.putImageData(latestCanvasState, 0, 0)
+          this.imageCtx.putImageData(latestCanvasState, 0, 0)
 
-        this.imageCtx.putImageData(blurredArea, this.startX, this.startY)
+          this.imageCtx.putImageData(blurredArea, this.startX, this.startY)
+          break
+
+        default:
+          window[controllerCensorOption] satisfies never
       }
-
-
     }
     latestCanvasImage.src = this.image.toDataURL()
-
   }
 
   static styles = css`
@@ -138,11 +148,11 @@ console.log(window[controllerCensorOption])
       position: relative;
     }
 
-    #image {
+    .image {
       margin: 0 100% 0 0
     }
 
-    #overlay {
+    .overlay {
       position: absolute;
       left: 0;
       top: 0;
