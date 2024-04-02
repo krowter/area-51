@@ -75,8 +75,7 @@ export class A51Canvas extends LitElement {
 
   }
 
-  private handleFileUpload(e: Event) {
-    if (!(e.currentTarget instanceof HTMLInputElement)) throw new Error('e.currentTarget is not HTMLInputElement')
+  private handleFileUpload(e: Event & { currentTarget: HTMLFormElement }) {
     if (e.currentTarget.files === null) throw new Error('e.currentTarget.files is null')
 
     const src = URL.createObjectURL(e.currentTarget.files[0])
@@ -117,7 +116,7 @@ export class A51Canvas extends LitElement {
           this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
           this.imageCtx.fill()
           break
-          
+
         case 'blur':
           const latestCanvasState = this.imageCtx.getImageData(0, 0, this.image.width, this.image.height)
 

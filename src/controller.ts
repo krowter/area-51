@@ -7,8 +7,7 @@ export class A51Controller extends LitElement {
     firstUpdated(): void {
         window[controllerCensorOption] = 'black-out'
     }
-    private handleChange(e: FormDataEvent) {
-        if (!(e.currentTarget instanceof HTMLFormElement)) return;
+    private handleChange(e: FormDataEvent & { currentTarget: HTMLFormElement }) {
         const censorOption = new FormData(e.currentTarget).get('censor-option')
 
         if (censorOption === 'blur' || censorOption === 'black-out') {
