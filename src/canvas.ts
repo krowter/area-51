@@ -78,7 +78,7 @@ export class A51Canvas extends LitElement {
         this.endY = this.startY;
         this.startY = _endY;
       }
-      this.clearSelectionRect();
+      this.applyFilter();
     });
 
     const canvasActions = createCanvasActions(this.image, this.imageCtx);
@@ -139,7 +139,7 @@ export class A51Canvas extends LitElement {
     );
   }
 
-  private clearSelectionRect() {
+  private applyFilter() {
     if (this.eventSource === undefined)
       throw new Error("this.eventSource is undefined");
 
@@ -155,7 +155,7 @@ export class A51Canvas extends LitElement {
           payload: [this.startX, this.startY, this.endX, this.endY],
         });
       default:
-        window[controllerCensorOption] satisfies never;
+        window[controllerCensorOption] satisfies never; // exhaustive check
     }
   }
 

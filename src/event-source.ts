@@ -1,8 +1,17 @@
 export class EventSource<
   EventItem extends { type: string; payload: unknown[] }
 > {
-  events: EventItem[] = [];
-  currentIndex = 0;
+  private events: EventItem[] = [];
+
+  /**
+   * pointer to which state is currently drawn
+   * 
+   * when appending new events, increment by 1
+   * 
+   * when undoing, all events/changes from initial state 
+   * up until this index - 1 will be applied, decrement by 1
+   */
+  private currentIndex = 0;
 
   constructor(
     private actionByType: Record<
@@ -11,9 +20,11 @@ export class EventSource<
     >
   ) {}
 
-  resetState() {
-    throw new Error("resetState not implemented.");
-  }
+  /**
+   * allow consumer to use their own resetter
+   * before changes are applied when calling undo()
+   */
+  resetState: (() => void) | undefined;
 
   append(event: EventItem) {
     this.events[this.currentIndex] = event;
@@ -25,7 +36,7 @@ export class EventSource<
   undo() {
     if (this.currentIndex === 0) return;
 
-    this.resetState();
+    if (this.resetState !== undefined) this.resetState();
 
     this.events
       .slice(0, this.currentIndex - 1)
