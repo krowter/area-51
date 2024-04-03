@@ -1,6 +1,57 @@
-import { LitElement, css, html } from 'lit'
-import { customElement } from 'lit/decorators.js'
-import { controllerCensorOption } from './symbols'
+import { LitElement, css, html } from 'lit';
+import { customElement } from 'lit/decorators.js';
+import { controllerCensorOption } from './symbols';
+
+
+function createCanvasActions(canvas: HTMLCanvasElement, canvasCtx: CanvasRenderingContext2D) {
+  return {
+    'blur': (startX: number, startY: number, endX: number, endY: number) => {
+      const latestCanvasImage = new Image()
+      latestCanvasImage.onload = () => {
+        canvasCtx.filter = 'blur(5px)'
+
+        const selectedArea = [startX, startY, endX - startX, endY - startY] as const
+
+        canvasCtx.drawImage(latestCanvasImage, ...selectedArea, ...selectedArea)
+
+        canvasCtx.filter = 'none'
+      }
+      latestCanvasImage.src = canvas.toDataURL()
+    },
+    'black-out': (startX: number, startY: number, endX: number, endY: number) => {
+      canvasCtx.rect(startX, startY, endX - startX, endY - startY);
+      canvasCtx.fill()
+    }
+  }
+}
+
+type CanvasDrawEvent = {
+  type: 'blur'
+  payload: [startX: number, startY: number, endX: number, endY: number]
+} | {
+  type: 'black-out'
+  payload: [startX: number, startY: number, endX: number, endY: number]
+}
+
+class EventSource<EventItem extends { type: string, payload: unknown[] }> {
+  events: EventItem[] = []
+  currentIndex = 0
+
+  constructor(private actionByType: Record<string, (...args: EventItem['payload']) => void>) {
+    if (typeof actionByType.reset !== 'function') throw new Error('actionByType must implement a reset() method');
+  }
+
+  append(event: EventItem) {
+    this.events[this.currentIndex++] = event
+    this.actionByType[event.type].apply(null, event.payload)
+  }
+
+  undo() {
+    this.actionByType.reset()
+    // TODO
+    // this.events.slice(0, --this.currentIndex).forEach(event => this.actionByType[event.type].apply(null, event.payload))
+  }
+}
 
 @customElement('a51-canvas')
 export class A51Canvas extends LitElement {
@@ -15,9 +66,11 @@ export class A51Canvas extends LitElement {
   overlayCtx: CanvasRenderingContext2D | null = null
   overlay: HTMLCanvasElement | null = null
 
+  eventSource: EventSource<CanvasDrawEvent> | undefined
+
   render() {
     return html`
-      <input type=file @change=${this.handleFileUpload} />
+      <input type=file @change=${this.handleUpload} />
       <button @click=${this.handleDownload}>Download</button>
       <div class=wrapper>
         <canvas class=overlay width=500 height=500></canvas>
@@ -54,6 +107,7 @@ export class A51Canvas extends LitElement {
       this.startX = e.clientX - rect.left;
       this.startY = e.clientY - rect.top;
     });
+
     this.overlay.addEventListener('mouseup', (e) => {
       if (this.overlay === null) return;
 
@@ -73,11 +127,15 @@ export class A51Canvas extends LitElement {
       this.clearSelectionRect();
     });
 
+    const canvasActions = createCanvasActions(this.image, this.imageCtx)
+    this.eventSource = new EventSource<CanvasDrawEvent>(canvasActions)
   }
 
-  private handleFileUpload(e: Event & { currentTarget: HTMLFormElement }) {
+  private handleUpload(e: Event & { currentTarget: HTMLFormElement }) {
     if (e.currentTarget.files === null) throw new Error('e.currentTarget.files is null')
 
+    // TODO store as this.original image,
+    // di firstUpdated, new EventSource( , reset: () => cara balik ke original image )
     const src = URL.createObjectURL(e.currentTarget.files[0])
     const img = new Image()
     img.onload = () => {
@@ -103,34 +161,13 @@ export class A51Canvas extends LitElement {
   }
 
   private clearSelectionRect() {
-    if (this.image === null) throw new Error('this.image is null');
-
-    const latestCanvasImage = new Image()
-
-    if (this.overlayCtx === null || this.overlay === null) throw new Error('this.overlayCtx is null');
-    if (this.imageCtx === null || this.image === null) throw new Error('this.imageCtx is null');
+    if (this.eventSource === undefined) throw new Error('this.eventSource is undefined');
 
     switch (window[controllerCensorOption]) {
       case 'black-out':
-        this.imageCtx.rect(this.startX, this.startY, this.endX - this.startX, this.endY - this.startY);
-        this.imageCtx.fill()
-        break
-
+        return this.eventSource.append({ type: 'black-out', payload: [this.startX, this.startY, this.endX, this.endY] })
       case 'blur':
-        latestCanvasImage.onload = () => {
-          if (this.imageCtx === null || this.image === null) throw new Error('this.imageCtx is null');
-
-          this.imageCtx.filter = 'blur(5px)'
-
-          const selectedArea = [this.startX, this.startY, this.endX - this.startX, this.endY - this.startY] as const
-
-          this.imageCtx.drawImage(latestCanvasImage, ...selectedArea, ...selectedArea)
-
-          this.imageCtx.filter = 'none'
-        }
-        latestCanvasImage.src = this.image.toDataURL()
-        break
-
+        return this.eventSource.append({ type: 'blur', payload: [this.startX, this.startY, this.endX, this.endY] })
       default:
         window[controllerCensorOption] satisfies never
     }
