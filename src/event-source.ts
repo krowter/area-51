@@ -1,4 +1,6 @@
-export class EventSource<EventItem extends { type: string; payload: unknown[] }> {
+export class EventSource<
+  EventItem extends { type: string; payload: unknown[] }
+> {
   events: EventItem[] = [];
   currentIndex = 0;
 
@@ -14,11 +16,15 @@ export class EventSource<EventItem extends { type: string; payload: unknown[] }>
   }
 
   append(event: EventItem) {
-    this.events[this.currentIndex++] = event;
+    this.events[this.currentIndex] = event;
     this.actionByType[event.type].apply(null, event.payload);
+
+    this.currentIndex += 1;
   }
 
   undo() {
+    if (this.currentIndex === 0) return;
+
     this.resetState();
 
     this.events
@@ -31,6 +37,12 @@ export class EventSource<EventItem extends { type: string; payload: unknown[] }>
   }
 
   redo() {
-    
+    const nextEvent = this.events[this.currentIndex];
+
+    if (nextEvent === undefined) return;
+
+    this.actionByType[nextEvent.type].apply(null, nextEvent.payload);
+
+    this.currentIndex += 1;
   }
 }

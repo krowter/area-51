@@ -23,6 +23,7 @@ export class A51Canvas extends LitElement {
     return html`
       <input type="file" @change=${this.handleUpload} />
       <button @click=${this.undo}>Undo</button>
+      <button @click=${this.redo}>Redo</button>
       <button @click=${this.handleDownload}>Download</button>
       <div class="wrapper">
         <canvas class="overlay" width="500" height="500"></canvas>
@@ -88,6 +89,12 @@ export class A51Canvas extends LitElement {
     if (this.eventSource === undefined)
       throw new Error("this.eventSource is undefined");
     this.eventSource.undo();
+  }
+
+  private redo() {
+    if (this.eventSource === undefined)
+      throw new Error("this.eventSource is undefined");
+    this.eventSource.redo();
   }
 
   private handleUpload(e: Event & { currentTarget: HTMLFormElement }) {
