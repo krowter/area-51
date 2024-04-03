@@ -85,6 +85,8 @@ export class A51Canvas extends LitElement {
     this.eventSource = new EventSource<CanvasDrawEvent>(canvasActions);
   }
 
+  // TODO jadiin public, semua buttons masukin a51-controller
+  // pnggil dgn querySelector(a51-canvas).redo dll.
   private undo() {
     if (this.eventSource === undefined)
       throw new Error("this.eventSource is undefined");
