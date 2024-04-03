@@ -1,7 +1,9 @@
 # Area 51
 
+![app preview](./docs/preview.gif)
+
 ### Why the name? 
-Well because Area 51 has been recorded to use █████████ while also preventing ██████ from ███████ █████████.
+Well because Area 51 is known for █████████ while also preventing ██████ from ███████ █████████.
 
 ### Features roadmap:
 - [x] Upload image to canvas
@@ -9,6 +11,7 @@ Well because Area 51 has been recorded to use █████████ while 
 - [x] Select area using mouse and black out part of the image
 - [x] Add option to blur instead
 - [x] Undo/redo functionality
-- [ ] Decent UI
+- [ ] Desktop UI
+- [ ] Mobile UI
 - [ ] Detect faces automatically and tap to blur
 - [ ] Detect texts automatically and tap to blur

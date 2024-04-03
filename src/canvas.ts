@@ -169,6 +169,7 @@ export class A51Canvas extends LitElement {
     }
 
     .overlay {
+      cursor: crosshair;
       position: absolute;
       left: 0;
       top: 0;
