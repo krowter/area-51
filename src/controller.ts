@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement } from "lit/decorators.js";
 import { controllerCensorOption } from "./symbols";
 import { type A51Canvas } from "./canvas";
 

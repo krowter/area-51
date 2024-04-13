@@ -5,10 +5,10 @@ export class EventSource<
 
   /**
    * pointer to which state is currently drawn
-   * 
+   *
    * when appending new events, increment by 1
-   * 
-   * when undoing, all events/changes from initial state 
+   *
+   * when undoing, all events/changes from initial state
    * up until this index - 1 will be applied, decrement by 1
    */
   private currentIndex = 0;
@@ -17,14 +17,9 @@ export class EventSource<
     private actionByType: Record<
       string,
       (...args: EventItem["payload"]) => void
-    >
+    >,
+    private resetChanges: () => void
   ) {}
-
-  /**
-   * allow consumer to use their own resetter
-   * before changes are applied when calling undo()
-   */
-  resetState: (() => void) | undefined;
 
   append(event: EventItem) {
     this.events[this.currentIndex] = event;
@@ -33,10 +28,14 @@ export class EventSource<
     this.currentIndex += 1;
   }
 
+  /**
+   * reset to initial state and replay all to last changes.
+   * current change is preserved in case user wants to redo
+   */
   undo() {
     if (this.currentIndex === 0) return;
 
-    if (this.resetState !== undefined) this.resetState();
+    this.resetChanges();
 
     this.events
       .slice(0, this.currentIndex - 1)

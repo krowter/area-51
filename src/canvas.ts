@@ -42,6 +42,8 @@ export class A51Canvas extends LitElement {
     if (this.imageCtx === null) throw new Error("imageCtx is null");
     if (this.overlayCtx === null) throw new Error("overlayCtx is null");
 
+
+    // TODO handle mobile device
     this.overlay.addEventListener("mousemove", (e) => {
       if (!this.isMouseDown) return;
       this.endX = e.offsetX;
@@ -76,9 +78,6 @@ export class A51Canvas extends LitElement {
       }
       this.applyFilter();
     });
-
-    const canvasActions = createCanvasActions(this.image, this.imageCtx);
-    this.eventSource = new EventSource<CanvasDrawEvent>(canvasActions);
   }
 
   undo() {
@@ -104,14 +103,15 @@ export class A51Canvas extends LitElement {
     };
     img.src = src;
 
-    if (this.eventSource === undefined)
-      throw new Error("this.eventSource is undefined");
+    if (this.image === null || this.imageCtx === null)
+      throw new Error("this.imageCtx is null");
 
-    this.eventSource.resetState = () => {
+    const canvasActions = createCanvasActions(this.image, this.imageCtx);
+    this.eventSource = new EventSource<CanvasDrawEvent>(canvasActions, () => {
       if (this.imageCtx === null) throw new Error("this.imageCtx is null");
 
       this.imageCtx.drawImage(img, 0, 0);
-    };
+    });
   }
 
   handleDownload() {
