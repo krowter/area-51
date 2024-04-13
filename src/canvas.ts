@@ -21,10 +21,6 @@ export class A51Canvas extends LitElement {
 
   render() {
     return html`
-      <input type="file" @change=${this.handleUpload} />
-      <button @click=${this.undo}>Undo</button>
-      <button @click=${this.redo}>Redo</button>
-      <button @click=${this.handleDownload}>Download</button>
       <div class="wrapper">
         <canvas class="overlay" width="500" height="500"></canvas>
         <canvas class="image" width="500" height="500"></canvas>
@@ -85,21 +81,19 @@ export class A51Canvas extends LitElement {
     this.eventSource = new EventSource<CanvasDrawEvent>(canvasActions);
   }
 
-  // TODO jadiin public, semua buttons masukin a51-controller
-  // pnggil dgn querySelector(a51-canvas).redo dll.
-  private undo() {
+  undo() {
     if (this.eventSource === undefined)
       throw new Error("this.eventSource is undefined");
     this.eventSource.undo();
   }
 
-  private redo() {
+  redo() {
     if (this.eventSource === undefined)
       throw new Error("this.eventSource is undefined");
     this.eventSource.redo();
   }
 
-  private handleUpload(e: Event & { currentTarget: HTMLFormElement }) {
+  handleUpload(e: Event & { currentTarget: HTMLFormElement }) {
     if (e.currentTarget.files === null)
       throw new Error("e.currentTarget.files is null");
 
@@ -120,7 +114,7 @@ export class A51Canvas extends LitElement {
     };
   }
 
-  private handleDownload() {
+  handleDownload() {
     if (this.image === null) throw new Error("this.image is null");
     document.write(`<img src="${this.image.toDataURL("image/png")}"/>`);
   }
