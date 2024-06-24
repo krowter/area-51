@@ -100,10 +100,18 @@ export class A51Canvas extends LitElement {
   private handleUpload(e: Event & { currentTarget: HTMLFormElement }) {
     if (e.currentTarget.files === null)
       throw new Error("e.currentTarget.files is null");
-
+    
     const src = URL.createObjectURL(e.currentTarget.files[0]);
     const img = new Image();
+
     img.onload = () => {
+      if (this.image === null) throw new Error("this.image is null");
+      if (this.overlay === null) throw new Error("this.overlay is null");
+
+      this.image.width = img.width;
+      this.image.height = img.height;
+      this.overlay.width = img.width;
+      this.overlay.height = img.height;
       this.imageCtx?.drawImage(img, 0, 0);
     };
     img.src = src;
